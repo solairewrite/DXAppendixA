@@ -8,11 +8,18 @@ bool InitWindowsApp(HINSTANCE instanceHandle, int show);
 // 消息循环
 int Run();
 
-// 窗口过程会处理窗口所接受到的消息
+// 窗口过程:处理窗口所接受到的消息
 LRESULT CALLBACK
 WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // 在Windows应用程序中WinMain相当于大多数语言的main()
+// 如果WinMain函数成功运行,那么在其终止时,应返回WM_QUIT消息的wParam成员
+// 如果函数在退出时还没进入消息循环,返回0
+// #define WINAPI __stdcall 指明函数的调用约定,关乎函数参数的入栈顺序等
+// hInstance:当前应用程序的实例句柄
+// hPrevInstance:Win32编程用不到
+// pCmdLine:运行此程序所用的命令行参数字符串
+// nCmdShow:应用程序如何显示.(按照窗口当前的大小与位置,窗口最大化...)
 int WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow)
 {
@@ -30,20 +37,21 @@ bool InitWindowsApp(HINSTANCE instanceHandle, int show)
 	// 填写WNDCLASS结构体,根据其中描述的特征来创建一个窗口
 	WNDCLASS wc;
 
-	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = WndProc;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = instanceHandle;
-	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
-	wc.hCursor = LoadCursor(0, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName = 0;
-	wc.lpszClassName = L"BasicWndClass";
+	wc.style = CS_HREDRAW | CS_VREDRAW; // 窗口类的样式,当工作区的宽度或高度发生改变时就重绘窗口
+	wc.lpfnWndProc = WndProc; // 关联的窗口过程函数的指针
+	wc.cbClsExtra = 0; // 分配额外的内存空间
+	wc.cbWndExtra = 0; // 分配额外的内存空间
+	wc.hInstance = instanceHandle; // 当前应用程序实例的句柄
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION); // 指定一个图标的句柄,这里采用默认
+	wc.hCursor = LoadCursor(0, IDC_ARROW); // 指定光标样式句柄
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH); // 指出画刷的句柄,以此指定窗口工作区的背景颜色
+	wc.lpszMenuName = 0; // 指定窗口的菜单
+	wc.lpszClassName = L"BasicWndClass"; // 引用这个窗口类结构体的名字
 
 	// 在Windows系统中,为上述WNDCLASS注册一个实例
 	if (!RegisterClass(&wc))
 	{
+		// 消息框所属的窗口的句柄, 内容文本, 标题文本, 样式
 		MessageBox(0, L"RegisterClass FAILED", 0, 0);
 		return false;
 	}
@@ -58,7 +66,7 @@ bool InitWindowsApp(HINSTANCE instanceHandle, int show)
 		CW_USEDEFAULT,		// y坐标
 		CW_USEDEFAULT,		// 窗口宽度
 		CW_USEDEFAULT,		// 窗口高度
-		0,					// 父窗口
+		0,					// 父窗口句柄
 		0,					// 菜单句柄
 		instanceHandle,		// 应用程序实例句柄
 		0					// 其他参数
@@ -94,14 +102,19 @@ int Run()
 		}
 		else
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			TranslateMessage(&msg); // 实现键盘按键的转换,特别是将虚拟按键消息转换为字符消息
+			DispatchMessage(&msg); // 把消息分派给指定的窗口过程
 		}
 	}
 
-	return (int)msg.wParam;
+	return (int)msg.wParam; // 如果应用程序根据WM_QUIT消息顺利退出,则WinMain返回WM_QUIT消息的参数wParam(退出代码)
 }
 
+// LRESULT: 整形数,表示函数调用是否成功
+// CALLBACK: 指明这是一个回调函数,不显示的调用,Windows系统(在需要处理消息的时候)自动调用此窗口过程
+// hWnd: 接收此消息的窗口句柄
+// msg: 标识此消息的预定值
+// wParam,lParam: 与具体消息相关的额外信息
 LRESULT CALLBACK
 WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
